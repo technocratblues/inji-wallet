@@ -36,7 +36,7 @@ export const API_URLS: ApiUrls = {
   },
   issuersList: {
     method: 'GET',
-    buildURL: (): `/${string}` => '/v1/mimoto/issuers',
+    buildURL: (): `/${string}` => '/v1/mimoto/v2/issuers',
   },
   issuerConfig: {
     method: 'GET',
