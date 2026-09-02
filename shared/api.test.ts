@@ -92,7 +92,7 @@ describe('API_URLS configuration', () => {
     });
 
     it('should build correct URL', () => {
-      expect(API_URLS.issuersList.buildURL()).toBe('/v1/mimoto/v2/issuers');
+      expect(API_URLS.issuersList.buildURL()).toBe('/v1/mimoto/issuers');
     });
   });
 
