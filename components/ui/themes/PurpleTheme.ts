@@ -787,9 +787,10 @@ export const PurpleTheme = {
       minHeight: Dimensions.get('screen').height * COPILOT_HEIGHT,
     },
     copilotButton: {
-      width: 104,
+      minWidth: 104,
       height: 40,
       marginLeft: 10,
+      paddingHorizontal: 12,
     },
     copilotButtonsContainer: {
       marginTop: 25,
