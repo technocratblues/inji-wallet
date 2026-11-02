@@ -74,9 +74,18 @@ describe('filterMdocCredential', () => {
     ).toThrow(/not found/);
   });
 
-  it('fails closed for an empty selection', () => {
-    expect(() => filterMdocCredential(ORIGINAL, {})).toThrow(/empty/);
-    expect(() => filterMdocCredential(ORIGINAL, {[NS]: []})).toThrow(/empty/);
+  it('shares no claims for an empty selection (verifier omitted claims)', () => {
+    const original = toBytes(ORIGINAL);
+    const issuerAuthStart = original.indexOf(Buffer.from('issuerAuth'));
+    const nameSpacesKeyStart = original.indexOf(Buffer.from('nameSpaces')) - 1;
+    const issuerAuth = original.subarray(issuerAuthStart, nameSpacesKeyStart);
+
+    [{}, {[NS]: []}].forEach(selection => {
+      const out = filterMdocCredential(ORIGINAL, selection);
+      expect(contains(out, 'nameSpaces')).toBe(false);
+      ALL_ELEMENTS.forEach(e => expect(contains(out, e)).toBe(false));
+      expect(toBytes(out).includes(issuerAuth)).toBe(true);
+    });
   });
 
   it('throws for input that is not an mdoc', () => {

@@ -28,6 +28,8 @@ function toUint8(x: any): any {
 const get = (m: any, k: string) => (m instanceof Map ? m.get(k) : m?.[k]);
 const set = (m: any, k: string, v: any) =>
   m instanceof Map ? m.set(k, v) : (m[k] = v);
+const remove = (m: any, k: string) =>
+  m instanceof Map ? m.delete(k) : delete m[k];
 
 function elementIdentifier(item: Tag): string {
   const inner = decode(item.contents as Uint8Array);
@@ -38,17 +40,30 @@ function elementIdentifier(item: Tag): string {
   return id;
 }
 
+function encodeCredential(root: any): string {
+  return Buffer.from(encode(toUint8(root)))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+/**
+ * Keeps only the selected claims (per namespace) in issuerSigned.nameSpaces.
+ *
+ * An empty selection is valid: when the verifier omits `claims` in the DCQL
+ * query, no selectively disclosable claims are requested. All mdoc claims are
+ * selectively disclosable, so the credential is returned without nameSpaces
+ * (only issuerAuth). nameSpaces is optional in IssuerSigned (ISO 18013-5) and
+ * an empty map is not allowed, so the key is removed.
+ */
 export function filterMdocCredential(
   credential: string,
   selection: Record<string, string[]>,
 ): string {
-  const namespaces = Object.keys(selection ?? {});
-  if (
-    namespaces.length === 0 ||
-    namespaces.some(ns => !selection[ns] || selection[ns].length === 0)
-  ) {
-    throw new Error('mso_mdoc selective disclosure: selection cannot be empty');
-  }
+  const requested = Object.keys(selection ?? {}).filter(
+    ns => (selection[ns] ?? []).length > 0,
+  );
 
   const root: any = decode(
     new Uint8Array(
@@ -59,6 +74,12 @@ export function filterMdocCredential(
     ),
   );
   const issuerSigned = get(root, 'issuerSigned') ?? root;
+
+  if (requested.length === 0) {
+    remove(issuerSigned, 'nameSpaces');
+    return encodeCredential(root);
+  }
+
   const nameSpaces = get(issuerSigned, 'nameSpaces');
   if (!nameSpaces) {
     throw new Error('mso_mdoc: nameSpaces not found in credential');
@@ -83,12 +104,12 @@ export function filterMdocCredential(
     if (kept.length > 0) {
       set(nameSpaces, ns, kept);
     } else {
-      nameSpaces instanceof Map ? nameSpaces.delete(ns) : delete nameSpaces[ns];
+      remove(nameSpaces, ns);
     }
   });
 
   const missing: string[] = [];
-  namespaces.forEach(ns =>
+  requested.forEach(ns =>
     selection[ns].forEach(el => {
       if (!matched.has(`${ns}|${el}`)) {
         missing.push(`${ns}.${el}`);
@@ -103,9 +124,5 @@ export function filterMdocCredential(
     );
   }
 
-  return Buffer.from(encode(toUint8(root)))
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  return encodeCredential(root);
 }

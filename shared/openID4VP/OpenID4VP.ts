@@ -306,6 +306,9 @@ class OpenID4VP {
    * mso_mdoc selective disclosure (DCQL flow). Fails closed: the full
    * credential is never returned. Only the selected issuer-signed items are
    * kept; issuerAuth and the retained items' bytes stay untouched.
+   * If no claims are requested (DCQL `claims` omitted), the mdoc is shared
+   * without any issuer-signed items, since all mdoc claims are selectively
+   * disclosable.
    */
   private static processMdocForSharing(
     vcData: VC,
@@ -316,7 +319,7 @@ class OpenID4VP {
       throw new Error('Invalid VC: missing credential');
     }
     if (!selectedDisclosures?.length) {
-      throw new Error('mso_mdoc: no claims selected');
+      return filterMdocCredential(credential, {});
     }
     const selection = resolveMdocSelection(
       vcData.verifiableCredential?.processedCredential,

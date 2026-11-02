@@ -652,7 +652,7 @@ fileignoreconfig:
   allowed_patterns:
   - keyboardShouldPersistTaps
 - filename: shared/openID4VP/mdocSelectiveDisclosure.test.ts
-  checksum: 81130ae20e0e0498dd42824660e18d55fc18de5da19bcbef80c153382f6a6d93
+  checksum: 8eae5cc8256b7842fe9531305918eb7f4f7fad5ec9996225dfdf099f5a57ae3c
 - filename: components/openid4vp/dcql/credentialSetSection/CredentialSetSection.tsx
   checksum: 93ab67b0e9950c3429b94f98ab18fb6a09ada274c64d57cab5a4e63a9a9c92b3
 version: "1.0"
