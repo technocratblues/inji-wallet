@@ -389,7 +389,10 @@ export default OpenID4VP;
  * Resolves selected mdoc claim paths ("<namespace>.<element>") into
  * {namespace: [elementIdentifier]} by matching against the credential's
  * actual namespaces, so namespaces containing dots are handled correctly.
- * Throws if anything cannot be resolved (never falls back to full disclosure).
+ * Throws if anything cannot be resolved (never falls back to full disclosure),
+ * or if one path matches more than one namespace/element pair (e.g.
+ * "a.b" + "c" and "a" + "b.c"), so a dotted-path collision can't share extra
+ * claims.
  */
 function resolveMdocSelection(
   processedCredential: any,
@@ -409,6 +412,9 @@ function resolveMdocSelection(
     for (const item of namespaces[ns]) {
       const full = `${ns}.${item.elementIdentifier}`;
       if (selectedSet.has(full)) {
+        if (matched.has(full)) {
+          throw new Error(`mso_mdoc: ambiguous claim path: ${full}`);
+        }
         if (!result[ns]) {
           result[ns] = [];
         }

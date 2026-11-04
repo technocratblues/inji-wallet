@@ -467,6 +467,8 @@ function buildDisclosureTree(
  * The namespace is used as-is as the top-level key (not split on '.'), so each
  * claim's full path stays `${namespace}.${elementIdentifier}`, the same format
  * as claimsPath.
+ * Objects are created without a prototype so claim names like `__proto__`
+ * are stored as normal keys and still shown.
  */
 function flattenMdocClaims(
   credential: any,
@@ -474,7 +476,7 @@ function flattenMdocClaims(
 ): Record<string, DisclosureData> {
   const namespaces =
     credential?.issuerSigned?.nameSpaces ?? credential?.nameSpaces ?? {};
-  const root: Record<string, DisclosureData> = {};
+  const root: Record<string, DisclosureData> = Object.create(null);
 
   Object.entries(namespaces).forEach(([namespace, items]: [string, any]) => {
     (items ?? []).forEach((item: any) => {
@@ -485,13 +487,13 @@ function flattenMdocClaims(
         __self: false,
         visibility: null,
         value: undefined,
-        children: {},
+        children: Object.create(null),
       };
       root[namespace].children[item.elementIdentifier] = {
         __self: true,
         visibility: ClaimVisibility.PRIVATE,
         value: item.elementValue,
-        children: {},
+        children: Object.create(null),
       };
     });
   });
