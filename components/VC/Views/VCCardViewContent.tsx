@@ -464,9 +464,9 @@ function buildDisclosureTree(
  * Claims are grouped under their namespace (e.g. org.iso.18013.5.1) instead of
  * being keyed by elementIdentifier alone, so claims with the same name in
  * different namespaces are not overwritten and are shown separately.
- * The namespace is used as-is as the top-level key (not split on '.'), so each
- * claim's full path stays `${namespace}.${elementIdentifier}`, the same format
- * as claimsPath.
+ * The namespace is used as-is as the top-level key (not split on '.'). Claims
+ * are matched against claimsPath with JSON.stringify([namespace, element]),
+ * the same key the DCQL flow builds.
  * Objects are created without a prototype so claim names like `__proto__`
  * are stored as normal keys and still shown.
  */
@@ -480,7 +480,7 @@ function flattenMdocClaims(
 
   Object.entries(namespaces).forEach(([namespace, items]: [string, any]) => {
     (items ?? []).forEach((item: any) => {
-      if (!claimsPath.has(`${namespace}.${item.elementIdentifier}`)) {
+      if (!claimsPath.has(JSON.stringify([namespace, item.elementIdentifier]))) {
         return;
       }
       root[namespace] ||= {
