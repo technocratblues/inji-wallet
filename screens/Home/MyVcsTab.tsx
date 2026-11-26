@@ -86,40 +86,20 @@ export const MyVcsTab: React.FC<HomeScreenTabProps> = props => {
     filterVcs(search);
   }, [controller.vcData]);
 
-  const filterVcs = (searchText: string) => {
-    setSearch(searchText);
-    setFilteredSearchData([]);
-    const searchTextLower = searchText.toLowerCase();
-    const filteredData: Array<Record<string, VCMetadata>> = [];
-    for (const [vcKey, vc] of Object.entries(controller.vcData)) {
-      const isDownloading = vc === null;
-      if (!isDownloading) {
-        let isVcFound = false;
-        const credentialSubject =
-          vc.verifiableCredential?.credentialSubject ||
-          vc.verifiableCredential?.credential?.credentialSubject;
-        if (isStringAndContains(searchText, vc['vcMetadata'].credentialType))
-          isVcFound = true;
-        else if (credentialSubject) {
-          isVcFound = searchNestedCredentialFields(
-            searchTextLower,
-            credentialSubject,
-          );
-        }
-
-        if (isVcFound) {
-          filteredData.push({[vcKey]: vc['vcMetadata']});
-        }
-      }
-    }
-
-    setFilteredSearchData(filteredData);
-
-    const isSearchNotEmpty = searchText !== '';
-    setClearSearchIcon(isSearchNotEmpty);
-    setShowPinVc(!isSearchNotEmpty);
+  const shouldSkip = (key: string): boolean => {
+    return key === 'biometrics' || key === 'id' || key === 'vcVer';
   };
 
+  const isStringAndContains = (searchText: string, value: any): boolean => {
+    return (
+      typeof value === 'string' &&
+      value.toLowerCase().includes(searchText.toLowerCase())
+    );
+  };
+
+  const isObjectAndNotNull = (value: any): boolean => {
+    return typeof value === 'object' && value !== null;
+  };
   const searchNestedCredentialFields = (
     searchText: string,
     credentialSubjectData: any,
@@ -143,20 +123,60 @@ export const MyVcsTab: React.FC<HomeScreenTabProps> = props => {
     return false;
   };
 
-  const shouldSkip = (key: string): boolean => {
-    return key === 'biometrics' || key === 'id' || key === 'vcVer';
-  };
+  const filterVcs = (searchText: string) => {
+    setSearch(searchText);
+    const searchTextLower = searchText.trim().toLowerCase();
 
-  const isStringAndContains = (searchText: string, value: any): boolean => {
-    return (
-      typeof value === 'string' && value.toLowerCase().includes(searchText)
-    );
-  };
+    if (!searchTextLower) {
+      setFilteredSearchData([]);
+      setClearSearchIcon(false);
+      setShowPinVc(true);
+      return;
+    }
 
-  const isObjectAndNotNull = (value: any): boolean => {
-    return typeof value === 'object' && value !== null;
-  };
+    const filteredData: Array<Record<string, VCMetadata>> = [];
+    controller.vcMetadatas.forEach(vcMetadata => {
+      const vcKey = vcMetadata.getVcKey();
+      const vc = controller.vcData?.[vcKey];
+      if (!vc) return;
+      let isVcFound = false;
 
+      if (isStringAndContains(searchTextLower, vcMetadata.credentialType)) {
+        isVcFound = true;
+      }
+
+      if (
+        !isVcFound &&
+        isStringAndContains(searchTextLower, vcMetadata.issuer)
+      ) {
+        isVcFound = true;
+      }
+      if (
+        !isVcFound &&
+        isStringAndContains(searchTextLower, vcMetadata.issuerHost)
+      ) {
+        isVcFound = true;
+      }
+
+      if (!isVcFound) {
+        const credentialSubject =
+          vc.verifiableCredential?.credentialSubject ||
+          vc.verifiableCredential?.credential?.credentialSubject;
+        if (credentialSubject) {
+          isVcFound = searchNestedCredentialFields(
+            searchTextLower,
+            credentialSubject,
+          );
+        }
+      }
+      if (isVcFound) {
+        filteredData.push({[vcKey]: vcMetadata});
+      }
+    });
+    setFilteredSearchData(filteredData);
+    setClearSearchIcon(true);
+    setShowPinVc(false);
+  };
   useEffect(() => {
     if (controller.areAllVcsLoaded) {
       controller.RESET_STORE_VC_ITEM_STATUS();
